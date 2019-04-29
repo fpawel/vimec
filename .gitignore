@@ -1,5 +1,5 @@
 debug
-build
+build/pdf
 Win32
 bin
 .vscode/

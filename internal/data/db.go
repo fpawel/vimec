@@ -2,13 +2,12 @@ package data
 
 import (
 	"database/sql"
-	"github.com/fpawel/elco/pkg/winapp"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"gopkg.in/reform.v1"
 	"gopkg.in/reform.v1/dialects/sqlite3"
 	"log"
-	"os/exec"
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -42,28 +41,8 @@ ORDER BY act_number DESC LIMIT 1;`, time.Now().Year())
 
 }
 
-func dataFolder() string {
-	dataFolder, err := winapp.AppDataFolderPath()
-	if err != nil {
-		panic(err)
-	}
-	return filepath.Join(dataFolder, "vimec")
-}
-
-func ShowDataFolder() {
-	if err := exec.Command("Explorer.exe", dataFolder()).Start(); err != nil {
-		panic(err)
-	}
-}
-
 func init() {
-
-	dataFolder := dataFolder()
-
-	if err := winapp.EnsuredDirectory(dataFolder); err != nil {
-		panic(err)
-	}
-	fileName := filepath.Join(dataFolder, "vimec.sqlite")
+	fileName := filepath.Join(filepath.Dir(os.Args[0]), "vimec.sqlite")
 
 	log.Println("data:", fileName)
 
