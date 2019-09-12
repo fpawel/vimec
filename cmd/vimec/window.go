@@ -5,8 +5,6 @@ import (
 	"github.com/fpawel/vimec/internal/data"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
-	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -20,25 +18,15 @@ var (
 	modelTableActs = new(ModelTableActs)
 )
 
-func runMainWindow() error {
+func runMainWindow() {
 
 	var (
-		tblActs                   *walk.TableView
+		tblActs *walk.TableView
 		cbYear,
 		cbMonth *walk.ComboBox
-		allowComboBoxHandleChange bool
 	)
 
-	modelTableActsSelectByDate := func() {
-		if !allowComboBoxHandleChange {
-			return
-		}
-		y, _ := strconv.ParseInt(years[cbYear.CurrentIndex()], 10, 64)
-		modelTableActs.SelectByDate(int(y), cbMonth.CurrentIndex())
-		tblActs.EnsureItemVisible(modelTableActs.RowCount() - 1)
-	}
-
-	if err := (MainWindow{
+	if _, err := (MainWindow{
 		AssignTo:   &mw.MainWindow,
 		Title:      "Акты ВИК",
 		Name:       "MainWindow",
@@ -66,17 +54,24 @@ func runMainWindow() error {
 						Children: []Widget{
 							Label{Text: "Год:"},
 							ComboBox{
-								Model:                 years,
-								AssignTo:              &cbYear,
-								OnCurrentIndexChanged: modelTableActsSelectByDate,
+								Model:        years,
+								AssignTo:     &cbYear,
+								CurrentIndex: indexOfYear(time.Now().Year()),
 							},
 							Label{Text: "Месяц:"},
 							ComboBox{
-								Model:                 months,
-								AssignTo:              &cbMonth,
-								CurrentIndex:          int(time.Now().Month()),
-								OnCurrentIndexChanged: modelTableActsSelectByDate,
+								Model:        months,
+								AssignTo:     &cbMonth,
+								CurrentIndex: int(time.Now().Month()),
 							},
+						},
+					},
+					PushButton{
+						Text: "Фильтр",
+						OnClicked: func() {
+							y, _ := strconv.ParseInt(years[cbYear.CurrentIndex()], 10, 64)
+							modelTableActs.SelectByDate(int(y), cbMonth.CurrentIndex())
+							tblActs.EnsureItemVisible(modelTableActs.RowCount() - 1)
 						},
 					},
 					PushButton{
@@ -87,32 +82,12 @@ func runMainWindow() error {
 						Text:      "PDF",
 						OnClicked: savePDF,
 					},
-					PushButton{
-						Text:"Удалить PDF",
-						OnClicked: func() {
-							_ = os.RemoveAll(filepath.Join(filepath.Dir(os.Args[0]), "pdf"))
-						},
-					},
 				},
 			},
 		},
-	}).Create(); err != nil {
-		return err
+	}).Run(); err != nil {
+		panic(err)
 	}
-
-	for i, y := range years {
-		n, _ := strconv.ParseInt(y, 10, 64)
-		if time.Now().Year() == int(n) {
-			_ = cbYear.SetCurrentIndex(i)
-			break
-		}
-	}
-	allowComboBoxHandleChange = true
-	modelTableActsSelectByDate()
-
-	mw.Run()
-
-	return nil
 }
 
 func runNewActDialog() {
@@ -183,8 +158,7 @@ func runNewActDialog() {
 				Value:    float64(data.NextActNumber()),
 			},
 
-
-			Composite{},
+			Label{},
 			PushButton{
 				AssignTo: &btn,
 				Text:     "Добавить",
@@ -224,6 +198,16 @@ func runNewActDialog() {
 		return
 	}
 	dlg.Run()
+}
+
+func indexOfYear(year int) int {
+	for i, strYear := range years {
+		y, _ := strconv.ParseInt(strYear, 10, 64)
+		if year == int(y) {
+			return i
+		}
+	}
+	return -1
 }
 
 var (
